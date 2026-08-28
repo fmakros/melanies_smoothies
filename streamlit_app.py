@@ -2,6 +2,7 @@
 import streamlit as st
 from snowflake.snowpark.functions import col
 import requests
+import pandas as pd
 
 # Write directly to the app
 st.title(f":cup_with_straw: Customize Your Smoothie :cup_with_straw:")
@@ -15,8 +16,11 @@ cnx = st.connection("snowflake")
 session = cnx.session()
 
 
-my_dataframe = session.table("smoothies.public.fruit_options").select(col('FRUIT_NAME'))
+my_dataframe = session.table("smoothies.public.fruit_options").select(col('FRUIT_NAME'), col('SEARCH_ON'))
 
+#st.dataframe(data=my_dataframe, use_container_width=True)
+
+pd_df = my_dataframe.to_pandas()
 
 name = st.text_input("Name on Smoothie:", "")
 
@@ -29,8 +33,9 @@ if ingredient_list:
     ingredients_string = ' '.join(ingredient_list)
 
     for ingredient in ingredient_list:
+      search_on=pd_df.loc[pd_df['FRUIT_NAME'] == fruit_chosen, 'SEARCH_ON'].iloc[0]
       st.subheader(ingredient + ' Nutrition Information')
-      smoothiefroot_response = requests.get(f"https://my.smoothiefroot.com/api/fruit/{ingredient}")  
+      smoothiefroot_response = requests.get(f"https://my.smoothiefroot.com/api/fruit/{search_on}")  
       sf_df = st.dataframe(data=smoothiefroot_response.json(), use_container_width=True)
 
     time_to_insert = st.button("Submit Order!")
